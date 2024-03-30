@@ -7,7 +7,7 @@ import SubmitButton from "../../../SubComponents/SubmitButton/SubmitButton.tsx";
 import axios, { AxiosResponse } from "axios";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
-
+import { loginAgency } from "../../../Configuration/agencySlice.ts";
 
 
 function RegisterAgent() {

@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import jwt, { JwtPayload } from "jsonwebtoken";
 import Agent from "../Model/agency.modal.js";
 
-// Extend the Request object to include a user property
+// Extend the Request object to include a agent property
 declare global {
     namespace Express {
         interface Request {
@@ -16,11 +16,9 @@ export const protectAgentRoute = async (req: Request, res: Response, next: NextF
     try {
         // Extract token from cookies
         const token = req.cookies.token;
-        console.log(token);
-        
+
         // Check if token is provided
-        
-        if (!token) return res.status(401).json({ success: false, message: "Unauthorized: Token not provided" });
+        if (!token) return res.status(401).json({ success: false, message: "Vous devez vous inscrire à nouveau." });
         
         // Retrieve JWT_SECRET from environment variables
         const JWT_SECRET = process.env.JWT_SECRET;
@@ -30,12 +28,12 @@ export const protectAgentRoute = async (req: Request, res: Response, next: NextF
         // Verify token validity and decode payload
         const decoded = jwt.verify(token, JWT_SECRET) as JwtPayload;
         // Check if token is valid
-        if (!decoded) return res.status(401).json({ success: false, message: "Unauthorized: Invalid Token" });
+        if (!decoded) return res.status(401).json({ success: false, message: "Token non validé, inscrire à nouveau." });
         
         // Find user by decoded user id and exclude password field
         const agent = await Agent.findById(decoded.userId).select("-password");
         // Check if user exists
-        if (!agent) return res.status(200).json({ success: false, message: "User Not Found" });
+        if (!agent) return res.status(404).json({ success: false, message: "Utilisateur pas trouvé." });
         
         // Assign user object to the request
         req.agent = agent;

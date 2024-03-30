@@ -20,10 +20,9 @@ const protectAgentRoute = (req, res, next) => __awaiter(void 0, void 0, void 0, 
     try {
         // Extract token from cookies
         const token = req.cookies.token;
-        console.log(token);
         // Check if token is provided
         if (!token)
-            return res.status(401).json({ success: false, message: "Unauthorized: Token not provided" });
+            return res.status(401).json({ success: false, message: "Vous devez vous inscrire à nouveau." });
         // Retrieve JWT_SECRET from environment variables
         const JWT_SECRET = process.env.JWT_SECRET;
         // Check if JWT_SECRET is available
@@ -33,12 +32,12 @@ const protectAgentRoute = (req, res, next) => __awaiter(void 0, void 0, void 0, 
         const decoded = jsonwebtoken_1.default.verify(token, JWT_SECRET);
         // Check if token is valid
         if (!decoded)
-            return res.status(401).json({ success: false, message: "Unauthorized: Invalid Token" });
+            return res.status(401).json({ success: false, message: "Token non validé, inscrire à nouveau." });
         // Find user by decoded user id and exclude password field
         const agent = yield agency_modal_js_1.default.findById(decoded.userId).select("-password");
         // Check if user exists
         if (!agent)
-            return res.status(200).json({ success: false, message: "User Not Found" });
+            return res.status(404).json({ success: false, message: "Utilisateur pas trouvé." });
         // Assign user object to the request
         req.agent = agent;
         // Continue to the next middleware

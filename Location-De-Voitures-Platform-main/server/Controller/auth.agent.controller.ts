@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
+import jwt, { JwtPayload } from "jsonwebtoken";
 import Stripe from "stripe";
 import agencyModal from "../Model/agency.modal.js";
 
@@ -12,8 +12,6 @@ export const registerUser = async (req: Request, res: Response) => {
             nom, prenom, email, password, tel: phoneNumber, adress: address, city, website, numeroDinscription: registrationNumber,
             numeroDeLicenceCommerciale: businessLicenseNumber, numeroDePoliceDassurance: insurancePolicyNumber
         } = req.body;
-        console.log(nom, prenom, email, password, phoneNumber, address, city, website, registrationNumber, businessLicenseNumber, insurancePolicyNumber);
-
 
         if (!nom || !prenom || !email || !password || !phoneNumber || !address || !city || !registrationNumber || !businessLicenseNumber || !insurancePolicyNumber) {
             return res.status(403).json({ success: false, message: "Missing Credentials" });
@@ -43,13 +41,13 @@ export const registerUser = async (req: Request, res: Response) => {
 
 export const loginAgent = async (req: Request, res: Response) => {
     try {
-        const { email, password } = req.body;
+        const { email, password: userPass } = req.body;
 
         const JWT_SECRET = process.env.JWT_SECRET;
 
         if (!JWT_SECRET) throw new Error("the JWT_SECRET is not available please check the .env file");
         // Check if email and password are provided
-        if (!email || !password) {
+        if (!email || !userPass) {
             return res.status(400).json({ success: false, message: "Email and password are required" });
         }
 
@@ -62,7 +60,7 @@ export const loginAgent = async (req: Request, res: Response) => {
         }
 
         // Compare passwords
-        const isPasswordValid = await bcrypt.compare(password, user.password);
+        const isPasswordValid = await bcrypt.compare(userPass, user.password);
 
         // If password is not valid
         if (!isPasswordValid) {
@@ -71,10 +69,10 @@ export const loginAgent = async (req: Request, res: Response) => {
 
         // Generate JWT token
         const token = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: "90d" });
+        const { password, ...rest } = user.toObject();
 
-        res.status(200).cookie("token", token, { maxAge: 1000 * 60 * 60 * 24 * 90, httpOnly: true, secure: false });
-        res.status(200).json({ success: true, message: "User Succesfully login" });
-
+        res.status(200).cookie("token", token, { maxAge: 1000 * 60 * 60 * 24 * 90, httpOnly: true, secure: false, sameSite: "strict" });
+        res.status(200).json({ success: true, message: "User Succesfully login", user: rest });
     } catch (error) {
         console.error("Error:", error);
         res.status(500).json({ success: false, message: "Internal Server Error" });
@@ -84,6 +82,8 @@ export const loginAgent = async (req: Request, res: Response) => {
 
 export const createPaymentSession = async (req: Request, res: Response) => {
     try {
+        const agentId = req.agent?._id;
+
         const CLIENT_DOMAIN = process.env.CLIENT_DOMAIN;
         const STRIPE_KEY = process.env.STRIPE_KEY;
         const SERVER_DOMAIN = process.env.SERVER_DOMAIN;
@@ -93,43 +93,73 @@ export const createPaymentSession = async (req: Request, res: Response) => {
 
         const stripe = new Stripe(STRIPE_KEY);
         // Extract the user ID from the request (assuming the user is authenticated)
-        const userId = req.user?._id; // Assuming you have a middleware to extract the user ID from the request
-
-        // Find the user by their ID
-        const user = await agencyModal.findById(userId);
-        if (!user) {
-            return res.status(404).json({ success: false, message: "User not found" });
-        }
-
-        // Add 30 days to the current date for subscription expiration
-        const currentDate = new Date();
-        const subscriptionExpirationAt = new Date(currentDate.getTime() + 30 * 24 * 60 * 60 * 1000);
-
-        // Update the user's subscription expiration property
-        user.subscriptionExpiresAt = subscriptionExpirationAt;
-        await user.save();
 
         // Create a payment session with Stripe
         const session = await stripe.checkout.sessions.create({
+            payment_method_types: ['card'],
             line_items: [{
                 price_data: {
-                    currency: 'mad', // Moroccan Dirham
+                    currency: "MAD",
                     product_data: {
-                        name: 'Agent Registration Fee',
+                        name: "plateforme de paiement mensuel",
+                        // You can add additional product details here
                     },
-                    unit_amount: 9900, // Amount in Moroccan Dirham (99 MAD)
+                    unit_amount: 9900, // Amount in cents (99 MAD)
                 },
                 quantity: 1,
             }],
-            mode: 'payment',
-            success_url: `${CLIENT_DOMAIN}/registration-success`,
-            cancel_url: `${CLIENT_DOMAIN}/agent-registerg`,
+            mode: "payment", // Switch to payment mode for one-time payment
+            success_url: `${CLIENT_DOMAIN}/payment-success`,
+            cancel_url: `${CLIENT_DOMAIN}/payment-failed`,
+            // You can add more options as needed, such as customer details
         });
 
-        // Return the session ID to the client
+        // Return the session URL to the client
         res.send({ url: session.url });
     } catch (error) {
         console.error("Error:", error);
         res.status(500).json({ success: false, message: "Internal Server Error" });
+    }
+}
+
+
+export const webHooks = async (req: Request, res: Response) => {
+    let signInSecretKey: string = "whsec_35b71eab6458bcfd58570b9afda912b04c9bd7b7d6f9bf5a2cfeeac5470ee945";
+
+    const payload = req.body;
+    const sig: string | string[] | undefined = req.headers["stripe-signature"];
+
+    const STRIPE_KEY = process.env.STRIPE_KEY;
+    if (!STRIPE_KEY) throw new Error("the STRIPE_KEY is not available please check the .env file");
+
+    let event;
+    try {
+        const stripe = new Stripe(STRIPE_KEY);
+        if (sig) {
+            event = stripe.webhooks.constructEvent(payload, sig, signInSecretKey);
+            if (event.type === "checkout.session.completed") {
+                const agentId = event?.data?.object?.metadata?.agentId;
+                const currentDate = new Date();
+                // Update the user's subscription expiration property
+                const agent = await agencyModal.findByIdAndUpdate(agentId, {
+                    // Add 30 days to the current date for subscription expiration
+                    subscriptionExpiresAt: new Date(currentDate.getTime() + 1000 * 60 * 60 * 24 * 30),
+                }, {
+                    new: true,
+                });
+                if (!agent) {
+                    return res.status(404).json({ success: false, message: "User not found" });
+                }
+
+                res.status(201).json({ success: true, message: "Payment And Subscription Succesful" });
+            }
+        } else {
+            throw new Error("the sig variable is not available please check the agent auth controller");
+        }
+
+    } catch (error) {
+        console.log(error);
+        res.status(400).json({ success: false, message: "Internal Server Error" });
+        return false;
     }
 }

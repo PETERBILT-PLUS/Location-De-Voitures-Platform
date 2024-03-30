@@ -22,7 +22,7 @@ const protectRoute = (req, res, next) => __awaiter(void 0, void 0, void 0, funct
         const token = req.cookies.token;
         // Check if token is provided
         if (!token)
-            return res.status(401).json({ success: false, message: "Unauthorized: Token not provided" });
+            return res.status(401).json({ success: false, message: "Vous devez vous inscrire à nouveau." });
         // Retrieve JWT_SECRET from environment variables
         const JWT_SECRET = process.env.JWT_SECRET;
         // Check if JWT_SECRET is available
@@ -32,12 +32,12 @@ const protectRoute = (req, res, next) => __awaiter(void 0, void 0, void 0, funct
         const decoded = jsonwebtoken_1.default.verify(token, JWT_SECRET);
         // Check if token is valid
         if (!decoded)
-            return res.status(401).json({ success: false, message: "Unauthorized: Invalid Token" });
+            return res.status(401).json({ success: false, message: "Token non validé, inscrire à nouveau." });
         // Find user by decoded user id and exclude password field
         const user = yield user_model_js_1.default.findById(decoded.userId).select("-password");
         // Check if user exists
         if (!user)
-            return res.status(404).json({ success: false, message: "User Not Found" });
+            return res.status(404).json({ success: false, message: "Utilisateur pas trouvé." });
         // Assign user object to the request
         req.user = user;
         // Continue to the next middleware

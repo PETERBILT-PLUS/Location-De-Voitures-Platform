@@ -5,20 +5,31 @@ import { LoginAgentSchema } from '../../../Configuration/Schema';
 import { toast } from 'react-toastify';
 import SubmitButton from '../../../SubComponents/SubmitButton/SubmitButton.tsx';
 import "./LoginAgent.css";
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import axios, { AxiosResponse } from 'axios';
+import { useDispatch } from "react-redux";
+import { loginAgency } from '../../../Configuration/agencySlice.ts';
+import { logout } from '../../../Configuration/userSlice.ts';
 
 
 function LoginAgent() {
     const [loading, setLoading] = React.useState<boolean>(false);
+    const dispatch = useDispatch();
+    const navigate = useNavigate();
 
     const onSubmit = async (values: any, actions: any) => {
         try {
             setLoading(true);
-            const res: AxiosResponse<any, any> = await axios.post("http://localhost:5000/agent/login", values);
+            const res: AxiosResponse<any, any> = await axios.post("http://localhost:5000/agent/login", values, { withCredentials: true });
             if (res.data.success) {
+                console.log(res.data.user);
+                
                 toast.success("Login Succès");
+                dispatch(logout());
+                dispatch(loginAgency(res.data.user));
                 actions.resetForm();
+                navigate("/");
+                return false;
             } else if (res.status === 400) {
                 toast.warning("Remplissez tous les champs");
                 return false;

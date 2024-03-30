@@ -1,7 +1,8 @@
-  :root {
-    --lightBlue: #00A0DC;
-    --hignBlue: #006699;
-    --black: #313335;
-    --gray: #86888A;
-    --light: #CACCCE;
-  }
+:root {
+  --lightBlue: #00A0DC;
+  --highBlue: #006699;
+  --red: #dc3545;
+  --black: #313335;
+  --gray: #646567;
+  --light: #CACCCE;
+}
