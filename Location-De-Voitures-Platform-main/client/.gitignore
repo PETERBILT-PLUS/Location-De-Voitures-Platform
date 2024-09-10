@@ -22,3 +22,11 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Ignore system directories
+/Ma musique/
+/Mes images/
+/Mes vidéos/
+
+# Ignore other irrelevant directories
+../

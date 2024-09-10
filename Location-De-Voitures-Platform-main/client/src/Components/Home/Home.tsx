@@ -72,7 +72,7 @@ function Home() {
 
     const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         try {
-            setFilter((prev) => { [e.target.name]: e.target.value });
+            setFilter({ [e.target.name]: e.target.value });
         } catch (error) {
 
         }
