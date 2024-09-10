@@ -9,7 +9,7 @@ import AgenceDashboadLayout from './Components/AgenceDashboadLayout/AgenceDashbo
 import AdminDashboard from './Components/AgentDashboard/AdminDashboard.tsx';
 import AgenceAdminProfile from './Components/AgenceAdminProfile/AgenceAdminProfile.tsx';
 import AgenceAdminVehicules from './Components/AgenceAdminVehicules/AgenceAdminVehicules.tsx';
-import CheckState from "./checkState/CheckState.tsx";
+import CheckState from './Components/checkState/CheckState.tsx';
 import CreateListing from './Components/CreateListing/CreateListing.tsx';
 
 

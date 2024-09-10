@@ -1,6 +1,6 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
-interface IVehicle extends Document {
+export interface IVehicle extends Document {
     carName: string;
     carFuel: string;
     carMarque: string;
@@ -9,7 +9,7 @@ interface IVehicle extends Document {
     carType: string;
     carKm: number;
     pricePerDay: number;
-    isAvailable: boolean;
+    carEtat: string;
     ownerId: Schema.Types.ObjectId; // Reference to the owner (agency)
     registration: RegistrationDocument;
     insurance: InsuranceDocument;
@@ -52,8 +52,8 @@ export const VehicleSchema = new Schema<IVehicle>({
     carType: { type: String, required: true },
     carKm: { type: Number, required: true },
     pricePerDay: { type: Number, required: true },
-    isAvailable: { type: Boolean, default: true }, // Indicates if the vehicle is available for rent
-    ownerId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    carEtat: { type: String, required: true }, // Indicates if the vehicle is available for rent
+    ownerId: { type: mongoose.Types.ObjectId, ref: 'Agency', required: true },
     registration: { type: RegistrationDocumentSchema, required: true },
     insurance: { type: InsuranceDocumentSchema, required: true }
 }, { timestamps: true });

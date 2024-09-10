@@ -10,5 +10,5 @@ button.submit-btn {
 
 button.submit-btn:hover,
 button.submit-btn:active {
-    background-color: var(--hignBlue);
+    background-color: var(--highBlue);
 }

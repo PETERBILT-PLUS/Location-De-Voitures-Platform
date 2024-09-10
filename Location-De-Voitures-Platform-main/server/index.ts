@@ -1,13 +1,14 @@
 import express, { Express } from "express";
 import cookieParser from "cookie-parser";
 import cors from "cors";
+import { connectToDatabase } from "./db/connectToDatabase.js";
+import { config } from "dotenv";
+import bodyParser from "body-parser";
 import authRouter from "./Routes/auth.router.js";
 import agentRouter from "./Routes/auth.agent.router.js";
-import { config } from "dotenv";
-import { connectToDatabase } from "./db/connectToDatabase.js";
-import bodyParser from "body-parser";
 import checkAgent from "./Routes/checkAgent.router.js";
 import carsRouter from "./Routes/cars.router.js";
+import userRouter from "./Routes/user.router.js";
 config();
 
 const app: Express = express();
@@ -26,6 +27,7 @@ app.use("/agent-state", checkAgent);
 app.use("/auth", authRouter);
 app.use("/agent", agentRouter);
 app.use("/cars", carsRouter);
+app.use("/user", userRouter);
 
 app.listen(PORT, async () => {
     await connectToDatabase();

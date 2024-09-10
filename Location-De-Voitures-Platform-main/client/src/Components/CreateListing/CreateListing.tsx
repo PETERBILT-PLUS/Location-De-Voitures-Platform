@@ -2,26 +2,31 @@ import React from 'react';
 import { Form, Button, Container, Nav, NavDropdown, Navbar, Row, Image } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import "./CreateListing.css";
-import { useFormik } from 'formik';
+import { FormikHelpers, useFormik } from 'formik';
 import { getDownloadURL, getStorage, ref, uploadBytesResumable } from "firebase/storage";
 import { app } from "../../Configuration/firebase.ts";
 import { toast } from 'react-toastify';
+import { createListingSchema } from '../../Configuration/createListingShema.ts';
+import SubmitButton from '../../SubComponents/SubmitButton/SubmitButton.tsx';
+import { carMarques, typesVoitures } from '../../Configuration/values.ts';
+import axios, { AxiosResponse } from 'axios';
+
+
 
 interface IImageFile extends File {
     name: string,
 }
 
 interface FormValues {
+    carPhotos: string[]; // Array of file paths or URLs
     carName: string;
     carFuel: string;
     carMarque: string;
-    carPhotos: string[];
-    places: string;
+    places: string; // Changed to string as it's bound to a form control
     carType: string;
-    carKm: string;
-    pricePerDay: string;
-    isAvailable: boolean;
-    ownerId: string;
+    carKm: string; // Changed to string as it's bound to a form control
+    pricePerDay: string; // Changed to string as it's bound to a form control
+    carEtat: string;
     registration: {
         registrationNumber: string;
         registrationDate: string;
@@ -35,13 +40,15 @@ interface FormValues {
     };
 }
 
+
 function CreateListing() {
     const [isDisabled, setIsDisabled] = React.useState<boolean>(false);
     const [isDisabledMarque, setIsDisabledMarque] = React.useState<boolean>(false);
+    const [isDisabledType, setIsDisabledType] = React.useState<boolean>(false);
+    const [isDisabledEtat, setIsDisabledEtat] = React.useState<boolean>(false);
     const [uploadByte, setUploadByte] = React.useState<number>(0);
     const [imageLoading, setImageLoading] = React.useState<boolean>(false);
     const [files, setFiles] = React.useState<any>([]);
-    const [imagesUrl, setImagesUrl] = React.useState<string[]>([]);
 
 
     const handleImageSubmit = () => {
@@ -88,7 +95,6 @@ function CreateListing() {
         });
     }
 
-
     const handleRemoveImage = (index: number) => {
         const updatedPhotos = [...values.carPhotos]; // Create a copy of the carPhotos array
         updatedPhotos.splice(index, 1); // Remove the image URL at the specified index
@@ -100,121 +106,20 @@ function CreateListing() {
     }
 
 
-
-
-
-    const carMarques: string[] = [
-        'Dacia',
-        'Renault',
-        'Peugeot',
-        'Citroën',
-        'Volkswagen',
-        'Ford',
-        'Toyota',
-        'Nissan',
-        'Hyundai',
-        'Kia',
-        'Mercedes-Benz',
-        'BMW',
-        'Audi',
-        'Fiat',
-        'Opel',
-        'Suzuki',
-        'Mazda',
-        'Volvo',
-        'Jeep',
-        'Land Rover',
-        'Mitsubishi',
-        'Lexus',
-        'Honda',
-        'Subaru',
-        'Skoda',
-        'Seat',
-        'Chevrolet',
-        'Tesla',
-        'Jaguar',
-        'Mini',
-        'Alfa Romeo',
-        'Porsche',
-        'Smart',
-        'DS Automobiles',
-        'Infiniti',
-        'Abarth',
-        'Maserati',
-        'Bentley',
-        'Lamborghini',
-        'Ferrari',
-        'Bugatti',
-        'McLaren',
-        'Rolls-Royce',
-        'Aston Martin',
-        'Acura',
-        'Buick',
-        'Cadillac',
-        'Chrysler',
-        'Dodge',
-        'GMC',
-        'Hummer',
-        'Isuzu',
-        'Lincoln',
-        'Pontiac',
-        'Saturn',
-        'Saab',
-        'Koenigsegg',
-        'Lotus',
-        'Maybach',
-        'Pagani',
-        'Spyker',
-        'TVR',
-        'Vector',
-        'Wuling',
-        'Zenvo',
-        'Geely',
-        'BYD',
-        'Changan',
-        'Great Wall',
-        'Haval',
-        'JAC Motors',
-        'Lifan',
-        'Luxgen',
-        'Roewe',
-        'Brilliance',
-        'Chery',
-        'Dongfeng',
-        'FAW',
-        'Haima',
-        'MG',
-        'Trumpchi',
-        'Venucia',
-        'Yema',
-        'Zotye',
-        'BAIC',
-        'Landwind',
-        'Hongqi',
-        'WEY',
-        'Wuling'
-    ];
-
-    const typesVoitures: string[] = [
-        'Berline',
-        'SUV',
-        'Coupé',
-        'Cabriolet',
-        'Monospace',
-        'Utilitaire',
-        'Compacte',
-        'Sportive',
-        'Tout-terrain',
-        'Pick-up',
-        'Van',
-        'Fourgonnette',
-        'Mini-fourgonnette',
-        'Limousine'
-    ];
-
-
-    const onSubmit = async (state: any, actions: any) => {
-
+    const onSubmit = async (values: FormValues, actions: FormikHelpers<FormValues>) => {
+        if (values.carPhotos.length < 1) return toast.warning("Minimum 5 photos");
+        console.log(values);
+        const res: AxiosResponse<any, any> = await axios.post("http://localhost:5000/cars/create-listing", values, { withCredentials: true });
+        if (res.data.success && res.status === 201) {
+            toast.success("Vehicule Crée Succès");
+            actions.resetForm();
+        } else if (res.status === 401) {
+            toast.warning("Entres Tous les informations du Vehicule");
+            return false;
+        } else if (res.status === 500) {
+            toast.error("Ops Erreur de serveur");
+            return false;
+        }
     }
 
     const { handleSubmit, handleBlur, setValues, handleChange, isSubmitting, values, errors, touched } = useFormik<FormValues>({
@@ -227,8 +132,7 @@ function CreateListing() {
             carType: '',
             carKm: '',
             pricePerDay: '',
-            isAvailable: true,
-            ownerId: '',
+            carEtat: '',
             registration: {
                 registrationNumber: '',
                 registrationDate: '',
@@ -239,8 +143,9 @@ function CreateListing() {
                 insuranceCompany: '',
                 policyNumber: '',
                 expirationDate: ''
-            }
+            },
         },
+        validationSchema: createListingSchema,
         onSubmit,
     });
 
@@ -270,59 +175,66 @@ function CreateListing() {
                 </Container>
             </Navbar>
             <Container className="py-5">
-                <h1 className="title text-center display-6">Ajouter un Vehicule</h1>
+                <h1 className="title text-center display-6 pb-5 pt-3">Ajouter un Vehicule</h1>
                 <Row className="border mx-3 py-4 rounded">
                     <div className="col-12 col-md-6">
                         <Form onSubmit={handleSubmit} className="mb-4">
                             <Form.Group className="mb-3">
                                 <Form.Label className="px-1">Nom de voiture</Form.Label>
-                                <Form.Control type="text" placeholder="Nom de voiture" />
+                                <Form.Control type="text" onChange={handleChange} onBlur={handleBlur} value={values.carName} name="carName" placeholder="Nom de voiture" />
+                                {errors.carName && touched.carName && <h6 className="text-danger py-2 px-1">{errors.carName}</h6>}
                             </Form.Group>
 
                             <Form.Group className="mb-3">
                                 <Form.Label className="px-1">Type du carburant</Form.Label>
-                                <Form.Select onClick={() => setIsDisabled(true)}>
-                                    <option disabled>Type du carburant</option>
+                                <Form.Select onClick={() => setIsDisabled(true)} onChange={handleChange} onBlur={handleBlur} value={values.carFuel} name="carFuel">
+                                    <option disabled={isDisabled}>Type du carburant</option>
                                     <option>Essence</option>
                                     <option>Diesel</option>
                                     <option>Hybride</option>
                                     <option>Électrique</option>
                                 </Form.Select>
+                                {errors.carFuel && touched.carFuel && <h6 className="text-danger py-2 px-1">{errors.carFuel}</h6>}
                             </Form.Group>
 
                             <Form.Group className="mb-3">
                                 <Form.Label className="px-1">Marque du véhicule</Form.Label>
-                                <Form.Select onClick={() => setIsDisabledMarque(true)}>
-                                    <option disabled>Marque du véhicule</option>
+                                <Form.Select onClick={() => setIsDisabledMarque(true)} value={values.carMarque} onChange={handleChange} onBlur={handleBlur} name="carMarque">
+                                    <option disabled={isDisabledMarque}>Marque du véhicule</option>
                                     {carMarques.map((elem, index) => (
                                         <option key={index}>{elem}</option>
                                     ))}
                                 </Form.Select>
+                                {errors.carMarque && touched.carMarque && <h6 className="text-danger py-2 px-1">{errors.carMarque}</h6>}
                             </Form.Group>
 
                             <Form.Group className="mb-3">
                                 <Form.Label className="px-1">Nombre de places</Form.Label>
-                                <Form.Control type="number" placeholder="Nombre de places" />
+                                <Form.Control type="number" placeholder="Nombre de places" onChange={handleChange} onBlur={handleBlur} value={values.places} name="places" />
+                                {errors.places && touched.places && <h6 className="text-danger py-2 px-1">{errors.places}</h6>}
                             </Form.Group>
 
                             <Form.Group className="mb-3">
                                 <Form.Label className="px-1">Type de voiture</Form.Label>
-                                <Form.Select>
-                                    <option>Type de voiture</option>
+                                <Form.Select onClick={() => setIsDisabledType(true)} onChange={handleChange} onBlur={handleBlur} value={values.carType} name="carType">
+                                    <option disabled={isDisabledType}>Type de voiture</option>
                                     {typesVoitures.map((elem, index) => (
                                         <option key={index}>{elem}</option>
                                     ))}
                                 </Form.Select>
+                                {errors.carType && touched.carType && <h6 className="text-danger py-2 px-1">{errors.carType}</h6>}
                             </Form.Group>
 
                             <Form.Group className="mb-3">
                                 <Form.Label className="px-1">Kilométrage</Form.Label>
-                                <Form.Control type="number" placeholder="Kilométrage" name="km" />
+                                <Form.Control type="number" placeholder="Kilométrage" onChange={handleChange} onBlur={handleBlur} name="carKm" />
+                                {errors.carKm && touched.carKm && <h6 className="text-danger py-2 px-1">{errors.carKm}</h6>}
                             </Form.Group>
 
                             <Form.Group className="mb-3">
                                 <Form.Label className="px-1">Prix par jour (DH)</Form.Label>
-                                <Form.Control type="number" placeholder="Prix par jour" name="pricePerDay" />
+                                <Form.Control type="number" onChange={handleChange} onBlur={handleBlur} value={values.pricePerDay} placeholder="Prix par jour" name="pricePerDay" />
+                                {errors.pricePerDay && touched.pricePerDay && <h6 className="text-danger py-2 px-1">{errors.pricePerDay}</h6>}
                             </Form.Group>
 
                             <Form.Group className="mb-3">
@@ -331,54 +243,62 @@ function CreateListing() {
                                 <Form.Text>
                                     Vous devez indiquer si votre voiture est disponible ou en charge pour être visible par les clients.
                                 </Form.Text>
-                                <Form.Select>
-                                    <option>État de voiture</option>
+                                <Form.Select onClick={() => setIsDisabledEtat(true)} onChange={handleChange} onBlur={handleBlur} value={values.carEtat} name="carEtat">
+                                    <option disabled={isDisabledEtat}>État de Vehicule</option>
                                     <option>Disponible</option>
                                     <option>En Charge</option>
                                 </Form.Select>
+                                {errors.carEtat && touched.carEtat && <h6 className="text-danger py-2 px-1">{errors.carEtat}</h6>}
                             </Form.Group>
 
                             <Form.Group className="mb-3">
                                 <Form.Label className="px-1">Numéro d'immatriculation</Form.Label>
-                                <Form.Control type="text" placeholder="Numéro d'immatriculation" />
+                                <Form.Control type="text" value={values.registration?.registrationNumber} onChange={handleChange} onBlur={handleBlur} placeholder="Numéro d'immatriculation" name="registration.registrationNumber" />
+                                {errors.registration?.registrationNumber && touched.registration?.registrationNumber && <h6 className="text-danger py-2 px-1">{errors.registration?.registrationNumber}</h6>}
                             </Form.Group>
 
                             <Form.Group className="mb-3">
                                 <Form.Label className="px-1">Date d'immatriculation</Form.Label>
-                                <Form.Control type="date" />
+                                <Form.Control type="date" value={values.registration?.registrationDate} onChange={handleChange} onBlur={handleBlur} name="registration.registrationDate" />
+                                {errors.registration?.registrationDate && touched.registration?.registrationDate && <h6 className="text-danger py-2 px-1">{errors.registration?.registrationDate}</h6>}
                             </Form.Group>
 
                             <Form.Group className="mb-3">
                                 <Form.Label className="px-1">Date d'expiration de l'immatriculation</Form.Label>
-                                <Form.Control type="date" />
+                                <Form.Control type="date" value={values.registration?.registrationExpiration} onChange={handleChange} onBlur={handleBlur} name="registration.registrationExpiration" />
+                                {errors.registration?.registrationExpiration && touched.registration?.registrationExpiration && <h6 className="text-danger py-2 px-1">{errors.registration?.registrationExpiration}</h6>}
                             </Form.Group>
 
                             <Form.Group className="mb-3">
                                 <Form.Label className="px-1">Numéro d'identification du véhicule</Form.Label>
-                                <Form.Control type="text" placeholder="Numéro d'identification du véhicule" />
+                                <Form.Control type="text" value={values.registration?.vehicleIdentificationNumber} onChange={handleChange} onBlur={handleBlur} placeholder="Numéro d'identification du véhicule" name="registration.vehicleIdentificationNumber" />
+                                {errors.registration?.vehicleIdentificationNumber && touched.registration?.vehicleIdentificationNumber && <h6 className="text-danger py-2 px-1">{errors.registration?.vehicleIdentificationNumber}</h6>}
                             </Form.Group>
 
                             <Form.Group className="mb-3">
                                 <Form.Label className="px-1">Compagnie d'assurance</Form.Label>
-                                <Form.Control type="text" placeholder="Compagnie d'assurance" />
+                                <Form.Control type="text" value={values.insurance?.insuranceCompany} onChange={handleChange} onBlur={handleBlur} placeholder="Compagnie d'assurance" name="insurance.insuranceCompany" />
+                                {errors.insurance?.insuranceCompany && touched.insurance?.insuranceCompany && <h6 className="text-danger py-2 px-1">{errors.insurance?.insuranceCompany}</h6>}
                             </Form.Group>
 
                             <Form.Group className="mb-3">
                                 <Form.Label className="px-1">Numéro de police</Form.Label>
-                                <Form.Control type="text" placeholder="Numéro de police" />
+                                <Form.Control type="text" value={values.insurance?.policyNumber} onChange={handleChange} onBlur={handleBlur} name="insurance.policyNumber" placeholder="Numéro de police" />
+                                {errors.insurance?.policyNumber && touched.insurance?.policyNumber && <h6 className="text-danger py-2 px-1">{errors.insurance?.policyNumber}</h6>}
                             </Form.Group>
 
                             <Form.Group className="mb-3">
                                 <Form.Label className="px-1">Date d'expiration de l'assurance</Form.Label>
-                                <Form.Control type="date" />
+                                <Form.Control type="date" value={values.insurance?.expirationDate} onChange={handleChange} onBlur={handleBlur} name="insurance.expirationDate" />
+                                {errors.insurance?.expirationDate && touched.insurance?.expirationDate && <h6 className="text-danger py-2 px-1">{errors.insurance?.expirationDate}</h6>}
                             </Form.Group>
 
-                            <Button variant="primary" type="submit">Soumettre</Button>
+                            <SubmitButton disabled={isSubmitting} loading={isSubmitting} />
                         </Form>
 
                     </div>
                     <div className="col-12 col-md-6">
-                        <p className="lead text-center text-md-start">Veuillez capturer des images de votre voiture sous différents angles (coffre, avant, arrière, etc...).</p>
+                        <p className="text-center text-md-start">Veuillez capturer des images de votre voiture sous différents angles (coffre, avant, arrière, etc...). <br />la premire photo sa devient la photo de poster</p>
 
                         <Form.Group>
                             <Form.Label>Images</Form.Label>
@@ -386,6 +306,7 @@ function CreateListing() {
                             {imageLoading && <p className="text-dark fs-6 text-center pt-2">Loading...</p>}
                             {uploadByte ? <p className="text-dark fs-6 text-center pt-2">upload byte {Math.floor(uploadByte)}%</p> : null}
                             <Button type="button" className="my-3 justify-self-center" onClick={handleImageSubmit}>Télécharger</Button>
+                            {errors.carPhotos && touched.carPhotos && <h6 className="text-danger py-2">{errors.carPhotos}</h6>}
                         </Form.Group>
 
                         <Container>

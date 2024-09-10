@@ -38,7 +38,9 @@ function LoginAgent() {
                 return false;
             }
         } catch (error) {
-            toast.error("Ops Server Error");
+            if (axios.isAxiosError(error)) {
+                toast.warning(error.response?.data.message);
+            }
         } finally {
             setLoading(false);
         }

@@ -25,10 +25,6 @@ var __importStar = (this && this.__importStar) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.VehicleSchema = void 0;
 const mongoose_1 = __importStar(require("mongoose"));
-const MaintenanceRecordSchema = new mongoose_1.Schema({
-    date: { type: Date, required: true },
-    description: { type: String, required: true }
-});
 const RegistrationDocumentSchema = new mongoose_1.Schema({
     registrationNumber: { type: String, required: true },
     registrationDate: { type: Date, required: true },
@@ -45,13 +41,12 @@ exports.VehicleSchema = new mongoose_1.Schema({
     carFuel: { type: String, required: true },
     carMarque: { type: String, required: true },
     carPhotos: [{ type: String, required: true }],
-    places: { type: String, required: true },
+    places: { type: Number, required: true },
     carType: { type: String, required: true },
     carKm: { type: Number, required: true },
     pricePerDay: { type: Number, required: true },
-    isAvailable: { type: Boolean, default: true }, // Indicates if the vehicle is available for rent
-    ownerId: { type: mongoose_1.Schema.Types.ObjectId, ref: 'User', required: true },
-    maintenanceRecords: [MaintenanceRecordSchema],
+    carEtat: { type: String, required: true }, // Indicates if the vehicle is available for rent
+    ownerId: { type: mongoose_1.default.Types.ObjectId, ref: 'Agency', required: true },
     registration: { type: RegistrationDocumentSchema, required: true },
     insurance: { type: InsuranceDocumentSchema, required: true }
 }, { timestamps: true });

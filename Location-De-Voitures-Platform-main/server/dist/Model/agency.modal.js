@@ -5,10 +5,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importDefault(require("mongoose"));
 // Schema for agency location
-const AgenceLocalisationSchema = new mongoose_1.default.Schema({
-    latitude: { type: Number },
-    longitude: { type: Number }
-});
 // Schema for Agency
 const AgencySchema = new mongoose_1.default.Schema({
     nom: { type: String, required: true },
@@ -19,7 +15,6 @@ const AgencySchema = new mongoose_1.default.Schema({
     address: { type: String, required: true },
     city: { type: String, required: true },
     website: { type: String, required: false },
-    agenceLocalisation: { type: AgenceLocalisationSchema, default: null },
     registrationNumber: { type: String, required: true },
     businessLicenseNumber: { type: String, required: true },
     insurancePolicyNumber: { type: String, required: true },
